@@ -1,4 +1,4 @@
-# Deep Research Utility and Intelligent Discovery
+# Deep Research Utility and Intelligent Discovery System
 
 This project provides a comprehensive pipeline for processing scientific papers from ArXiv. The pipeline includes several steps:
 

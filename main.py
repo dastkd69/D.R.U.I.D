@@ -1,3 +1,4 @@
+from flask import Flask, render_template, request
 from downloaders import ArxivDownloader
 from db import DatabaseManager
 from processor import TextProcessor
@@ -5,6 +6,9 @@ from viz import KnowledgeGraph
 from config import LOG_FILE, DB_NAME
 from logger import setup_logger
 import sqlite3
+
+
+app = Flask(__name__)
 
 class PaperProcessor:
     def __init__(self, downloader, db_manager, text_processor, graph, logger):
@@ -27,12 +31,26 @@ class PaperProcessor:
 
         self.graph.visualize()
 
+
+logger = setup_logger(LOG_FILE)
+downloader = ArxivDownloader(logger)
+db_manager = DatabaseManager(logger)
+text_processor = TextProcessor()
+graph = KnowledgeGraph()
+processor = PaperProcessor(downloader, db_manager, text_processor, graph, logger)
+db_connection = sqlite3.connect(DB_NAME)
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/process', methods=['POST'])
+def process():
+    search_terms = request.form['search_terms']
+    processor.process_papers(search_terms)
+    return 'Processing complete!'
+
 if __name__ == '__main__':
-    logger = setup_logger(LOG_FILE)
-    downloader = ArxivDownloader(logger)
-    db_manager = DatabaseManager(logger)
-    text_processor = TextProcessor()
-    graph = KnowledgeGraph()
-    processor = PaperProcessor(downloader, db_manager, text_processor, graph, logger)
-    db_connection = sqlite3.connect(DB_NAME)
-    processor.process_papers('machine unlearning')
+    app.run()
+
+
