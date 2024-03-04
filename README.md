@@ -1,4 +1,4 @@
-# ArXiv Paper Processing Pipeline
+# Deep Research Utility and Intelligent Discovery
 
 This project provides a comprehensive pipeline for processing scientific papers from ArXiv. The pipeline includes several steps:
 
