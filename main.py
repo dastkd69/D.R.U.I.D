@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, send_file, redirect, url_for
 from downloaders import ArxivDownloader
 from db import DatabaseManager
 from processor import TextProcessor
@@ -6,6 +6,8 @@ from viz import KnowledgeGraph
 from config import LOG_FILE, DB_NAME
 from logger import setup_logger
 import sqlite3
+import os
+import time
 
 
 app = Flask(__name__)
@@ -44,11 +46,22 @@ db_connection = sqlite3.connect(DB_NAME)
 def index():
     return render_template('index.html')
 
+@app.route('/graph')
+def graph():
+    if os.path.exists('graph.png'):
+        return send_file('graph.html', mimetype='text/html')
+    else:
+        return "No graph available", 404
+
 @app.route('/process', methods=['POST'])
 def process():
     search_terms = request.form['search_terms']
+    start = time.time()
     processor.process_papers(search_terms)
-    return 'Processing complete!'
+    end = time.time()
+    print(f"Processing took {end - start} seconds")
+    logger.info(f"Processing took {end - start} seconds")
+    return redirect(url_for('graph'))
 
 if __name__ == '__main__':
     app.run()
