@@ -1,40 +1,59 @@
-import os
 import sqlite3
-from config import DB_NAME
 
 class DatabaseManager:
-    def __init__(self, logger):
-        self.db_connection = sqlite3.connect(DB_NAME)
+    def __init__(self, db_name, logger):
+        self.conn = sqlite3.connect(db_name)
+        self.cursor = self.conn.cursor()
         self.logger = logger
+        self.create_tables()
 
-        # Create the table if it doesn't exist
-        self.create_table()
-
-    def create_table(self):
-        cursor = self.db_connection.cursor()
-        cursor.execute("""
+    def create_tables(self):
+        self.cursor.execute("""
             CREATE TABLE IF NOT EXISTS papers (
-                url TEXT PRIMARY KEY,
+                id INTEGER PRIMARY KEY,
+                link TEXT,
+                title TEXT,
+                abstract TEXT,
+                authors TEXT,
+                publication_venue TEXT,
+                keywords TEXT,
                 entities TEXT,
                 relationships TEXT,
-                summary TEXT
+                extractive_summary TEXT,
+                abstractive_summary TEXT,
+                topics TEXT,
+                sentiment REAL
             )
         """)
-        self.db_connection.commit()
 
-    def store_paper(self, url, entities, relationships, summary):
+        self.conn.commit()
+
+    def store_paper(self, link, publication_venue,
+                    entities, relationships, extractive_summary, abstractive_summary,
+                    topics, sentiment):
         try:
-            entities_str = str(entities)
-            relationships_str = str(relationships)
-            summary_str = str(summary)
+            self.cursor.execute("""
+                INSERT INTO papers (link, publication_venue, 
+                                    entities, relationships, extractive_summary, abstractive_summary,
+                                    topics, sentiment)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (link, publication_venue, 
+                  entities, relationships, extractive_summary, abstractive_summary,
+                  topics, sentiment))
 
-            # Store the data in the database
-            cursor = self.db_connection.cursor()
-            cursor.execute("INSERT INTO papers (url, entities, relationships, summary) VALUES (?, ?, ?, ?)",
-                           (url, entities_str, relationships_str, summary_str))
-            self.db_connection.commit()
+            self.conn.commit()
+        except sqlite3.Error as e:
+            self.logger.error(f"An error occurred: {e.args[0]}")
 
-            self.logger.info(f'Successfully parsed and stored paper: {url}')
-        except Exception as e:
-            self.logger.error(f'Failed to parse or store paper: {url}')
-            self.logger.error(e)
+
+    def update_paper_topics(self, link, topics):
+        try:
+            self.cursor.execute("""
+                UPDATE papers
+                SET topics = ?
+                WHERE link = ?
+            """, (topics, link))
+
+            self.conn.commit()
+        except sqlite3.Error as e:
+            self.logger.error(f"An error occurred: {e.args[0]}")
